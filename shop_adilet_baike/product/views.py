@@ -2,13 +2,29 @@ from django.http import Http404
 from django.shortcuts import render, get_list_or_404, get_object_or_404
 
 # Create your views here.
+from django.views.generic import ListView, DetailView
+from django.views.generic.base import View
+
 from product.models import Category, Product
 
+#
+# def homepage(request):
+#     categories = Category.objects.all()
+#     return render(request, 'product/index.html', {'categories': categories})
+# #products? category = slug
+#
 
-def homepage(request):
-    categories = Category.objects.all()
-    return render(request, 'product/index.html', {'categories': categories})
-#products? category = slug
+class HomePageView(View):
+    def get(self,request):
+        categories = Category.objects.all()
+        return render(request, 'product/index.html', {'categories': categories})
+
+class HomePageView(ListView):
+    model = Category
+    #queryset = Category.objects.filter(....) фильтрация
+    template_name = 'product/index.html'
+    context_object_name = 'categories'
+
 
 
 
@@ -27,18 +43,45 @@ def homepage(request):
 #     if category_slug is not None:
 #         products = prod
 # ucts.filter(category_id =category_slug)
+#
+# def products_list(request,category_slug):
+#     if  not Category.objects.filter(slug=category_slug).exists():
+#         raise Http404('нет такой категории')
+#     products = Product.objects.filter(category_id=category_slug)
+#     return render(request, 'product/products_list.html', {'products': products})
 
-def products_list(request,category_slug):
-    if  not Category.objects.filter(slug=category_slug).exists():
-        raise Http404('нет такой категории')
-    products = Product.objects.filter(category_id=category_slug)
-    return render(request, 'product/products_list.html', {'products': products})
+class ProductsListView(View):
+    def get(self,request,category_slug):
+        if not Category.objects.filter(slug=category_slug).exists():
+            raise Http404('нет такой категории')
+        products = Product.objects.filter(category_id=category_slug)
+        return render(request, 'product/products_list.html', {'products': products})
 
 
+class ProductsListView(ListView):
+    model = Product #objects.all()
+    template_name = 'product/products_list.html'
+    context_object_name = 'products'
 
-def product_details(request, product_id):
-    product = get_object_or_404(Product, id=product_id)
-    return render(request, 'product/product_details.html',{'product':product})
+    # def get(self,request,category_slug):
+    #     if not Category.objects.filter(slug=category_slug).exists():
+    #         raise Http404('нет такой категории')
+    #     products = self.get_queryset().objects.filter(category_id=category_slug)
+    #     return render(request, 'product/products_list.html', {'products': products})
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        category_slug = self.kwargs.get('category_slug')
+        if not Category.objects.filter(slug=category_slug).exists():
+            raise Http404('нет такой категории')
+        queryset = queryset.filter(category_id=category_slug)
+        return queryset
+
+
+class productDetailsView(DetailView):
+    model = Product
+    template_name = 'product/product_details.html'
+
 
 
 
@@ -49,7 +92,7 @@ def product_details(request, product_id):
 #TODO:CRUD
 #TODO: поиск и фильрация
 #TODO:пагинация
-#TODO: функции переписать на классы (СLASS BASED VIEWS)
+
 
 #all() - выводит все обьекты моделей
 # select * from table
